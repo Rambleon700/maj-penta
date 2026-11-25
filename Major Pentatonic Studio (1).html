@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Major Pentatonic Studio</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:#0b0d10;color:#e5e7eb;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none}
+.mono{font-family:"Fira Code",ui-monospace,Menlo,Consolas,monospace}
+.card{background:rgba(17,24,39,.8);border:1px solid #1f2937;border-radius:12px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,.35);backdrop-filter:blur(6px)}
+.lbl{display:block;font-size:11px;font-weight:600;text-transform:uppercase;color:#9ca3af;margin-bottom:6px}
+select{width:100%;background:#1c232c;border:1px solid #2f3945;border-radius:8px;padding:8px;font-size:14px;color:#e5e7eb}
+.btn{background:#1c232c;border:1px solid #2f3945;border-radius:8px;padding:7px 12px;font-size:12px;color:#d1d5db}
+.btn:hover{background:#27313c}
+.btn.on{background:#78350f55;border-color:#f59e0b;color:#fcd34d}
+.fretcell{border-right:3px solid #7b828d;box-shadow:2px 0 4px rgba(0,0,0,.5)}
+.pulse{animation:pulse .4s ease-out}
+@keyframes pulse{0%{transform:scale(.8)}50%{transform:scale(1.45);box-shadow:0 0 18px #f59e0b}100%{transform:scale(1)}}
+.tabcol{transition:background-color .15s ease}
+.tabcol.active{background:#f59e0b33;border-radius:4px}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-track{background:#12100e}::-webkit-scrollbar-thumb{background:#374151;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#4b5563}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:#111827}
+</style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+<header class="sticky z-50 bg-gray-900 shadow-lg px-4 py-3 border-b border-gray-800 flex flex-wrap gap-3 items-center justify-between" style="top:env(safe-area-inset-top,0px)">
+  <div>
+    <div class="flex items-center gap-3"><span class="bg-gradient-to-tr from-amber-600 to-orange-500 p-2 rounded-xl shadow-md text-xl">🎸</span><span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">Major Pentatonic Studio</span></div>
+    <p class="text-xs text-gray-400">Interactive Riff Generator & Full Fretboard Visualizer</p>
+  </div>
+  <div class="flex gap-2">
+    <button id="gen" class="px-5 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600">🎲 Generate Riff</button>
+    <button id="fav" class="btn text-base" title="Save riff">★</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto w-full flex-grow px-4 py-6 space-y-6">
+  <div class="card grid grid-cols-2 lg:grid-cols-3 gap-4">
+    <div><span class="lbl">🎼 Key</span><select id="key"></select></div>
+    <div><span class="lbl">🎚 Style Preset</span>
+      <select id="style">
+        <option value="blues">Bluesy & Soulful</option>
+        <option value="country">Country & Twang</option>
+        <option value="rock" selected>Southern Rock</option>
+        <option value="melodic">Sweet Melodic</option>
+        <option value="shred">Fast Run</option>
+        <option value="funk">Funk & Syncopated</option>
+      </select></div>
+    <div><span class="lbl">📚 Complexity</span>
+      <select id="level">
+        <option value="beginner">Beginner (Basic Notes & Steps)</option>
+        <option value="intermediate" selected>Intermediate (Slides, Bends, Legato)</option>
+        <option value="advanced">Advanced (Fast Runs, Wide Leaps)</option>
+      </select></div>
+    <div><span class="lbl">🎵 Note Pattern Length</span>
+      <select id="len"><option value="8">8 Notes (Short Phrase)</option><option value="16" selected>16 Notes (Full Lick)</option><option value="24">24 Notes (Extended Run)</option></select></div>
+    <div><span class="lbl">🏷 Fretboard Labels</span>
+      <select id="labels"><option value="note">Note names</option><option value="deg">Scale degrees</option></select></div>
+    <div class="col-span-2 lg:col-span-1"><span class="lbl">🔊 Master Audio & Metronome</span><div class="flex items-center gap-3"><button id="metro" class="btn">⏱ Click</button><input id="vol" type="range" min="0" max="1" step="0.05" value="0.7" class="w-full accent-amber-500"></div></div>
+  </div>
+
+  <div class="card space-y-3">
+    <div class="flex flex-wrap justify-between gap-2 text-xs text-gray-400">
+      <span class="font-semibold text-gray-300 text-sm">🟧 CAGED Box Filters & Highlighting:</span>
+      <span class="flex gap-3 items-center">
+        <span><i class="inline-block w-3 h-3 rounded-full bg-red-500 align-middle"></i> <span id="lg-r">Root</span></span>
+        <span><i class="inline-block w-3 h-3 rounded-full bg-amber-400 align-middle"></i> <span id="lg-3">Major 3rd</span></span>
+        <span><i class="inline-block w-3 h-3 rounded-full bg-cyan-500 align-middle"></i> <span id="lg-o">2 · 5 · 6</span></span>
+      </span>
+    </div>
+    <div id="boxes" class="grid grid-cols-2 sm:grid-cols-6 gap-2"></div>
+  </div>
+
+  <div class="card">
+    <div class="flex justify-between mb-2 text-xs text-gray-400">
+      <span class="font-bold uppercase tracking-wide">👁 Fretboard Real-time Visualizer (24 Frets)</span>
+      <span class="mono">Standard Tuning: E A D G B E</span>
+    </div>
+    <div class="overflow-x-auto pb-2">
+      <div id="board" class="min-w-[1250px] bg-[#2a2421] rounded py-2 border-y-4 border-[#12100e]"></div>
+    </div>
+  </div>
+
+  <div class="card flex flex-wrap items-center gap-4 justify-between">
+    <div class="flex items-center gap-2">
+      <button id="play" class="w-12 h-12 rounded-full bg-amber-600 text-white text-lg">▶</button>
+      <button id="stop" class="w-10 h-10 rounded-full bg-gray-800 text-gray-300">■</button>
+      <button id="loop" class="btn">↻ Loop</button>
+      
+    </div>
+    <div class="flex-grow max-w-xs">
+      <div class="flex justify-between text-xs mb-1"><span class="text-gray-400 uppercase font-semibold">Tempo</span><span id="bpmv" class="mono text-amber-400">110 BPM</span></div>
+      <input id="bpm" type="range" min="40" max="200" value="110" class="w-full accent-amber-500">
+    </div>
+    <div class="flex items-center gap-1 bg-gray-800/80 p-1 rounded-lg border border-gray-700" id="speeds">
+      <button class="btn" data-s="0.5">0.5x</button><button class="btn" data-s="0.75">0.75x</button><button class="btn on" data-s="1">1x</button><button class="btn" data-s="1.25">1.25x</button><button class="btn" data-s="1.5">1.5x</button>
+    </div>
+    
+  </div>
+
+  <div class="card space-y-2">
+    <div class="flex justify-between items-center">
+      <h3 class="text-sm font-bold uppercase tracking-wide text-gray-300">🔢 Interactive Guitar Tablature (TAB)</h3>
+      <button id="copy" class="btn">Copy text TAB</button>
+    </div>
+    <div class="overflow-x-auto"><div id="tab" class="mono text-sm bg-black/40 p-3 rounded-lg flex items-start gap-1 min-w-[700px] select-text"></div></div>
+    <div class="text-xs text-gray-400 flex flex-wrap gap-4">
+      <span><b class="text-amber-400">h</b> hammer-on</span><span><b class="text-amber-400">p</b> pull-off</span>
+      <span><b class="text-amber-400">/</b> slide up</span><span><b class="text-amber-400">\</b> slide down</span><span><b class="text-amber-400">b</b> bend up a whole step</span><span><b class="text-amber-400">~</b> vibrato</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">🔖 Saved Favorites</h4>
+    <div id="favs" class="flex flex-wrap gap-2 text-xs"><span class="italic text-gray-600">No saved riffs yet. Click the star icon to save your generated riffs!</span></div>
+  </div>
+</main>
+<footer class="bg-gray-900 border-t border-gray-800 py-4 px-4 text-center text-xs text-gray-500"><p>Major Pentatonic Riff Generator &amp; Visualizer • Web Audio Synthesizer Engine</p></footer>
+
+<script>
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const STR=[{n:'e',p:64},{n:'B',p:59},{n:'G',p:55},{n:'D',p:50},{n:'A',p:45},{n:'E',p:40}];
+const IV=[0,2,4,7,9], DEG=['R','2','3','5','6'];
+// Box windows as semitone offsets from the lowest fret of the first box
+const BOX=[[0,3],[2,5],[4,8],[7,10],[9,13]];
+// d = rhythm cycle (beats), t = chance of h/p/slide between notes on the same string
+const STYLES={
+  blues:{d:[1,0.5,0.5,0.5,0.5,1],t:0.45},
+  country:{d:[0.5,0.25,0.25,0.5,0.5],t:0.55},
+  rock:{d:[0.5],t:0.4},
+  melodic:{d:[1,0.5,0.5,1,0.5,0.5],t:0.3},
+  shred:{d:[0.25],t:0.5},
+  funk:{d:[0.25,0.5,0.25,0.25,0.75,0.5],t:0.25}
+};
+const $=id=>document.getElementById(id);
+let ac=null,playing=false,loop=false,metro=false,speed=1,boxSel='all',riff=[],idx=0,cum=0,timer=null,favs=[];
+
+/* ---------- theory helpers ---------- */
+const rootPc=()=>+$('key').value;
+const degOf=pc=>IV.indexOf(((pc-rootPc())%12+12)%12);
+// lowest fret where box 1 begins = low-E fret of the relative minor root (6th degree)
+function boxStart(){const f=((rootPc()+9)%12-4+12)%12;return f||12}
+function inBox(fret){
+  if(boxSel==='all')return true;
+  const [a,b]=BOX[boxSel],d=((fret-boxStart())%12+12)%12;
+  return (d>=a&&d<=b)||(d+12>=a&&d+12<=b);
+}
+function noteAt(s,f){const p=STR[s].p+f,pc=p%12;return{s,f,p,name:NOTES[pc],deg:degOf(pc)}}
+function pool(){
+  const st=boxStart();let lo,hi;
+  if(boxSel==='all'){lo=st;hi=st+13}else{lo=st+BOX[boxSel][0];hi=st+BOX[boxSel][1]}
+  hi=Math.min(hi,24);const out=[];
+  STR.forEach((_,s)=>{for(let f=lo;f<=hi;f++){const n=noteAt(s,f);if(n.deg>=0)out.push(n)}});
+  return out;
+}
+
+/* ---------- audio ---------- */
+function initAudio(){
+  if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==='suspended')ac.resume();
+}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+function tone(pitch,sec,tech){
+  if(!ac)return;const v=+$('vol').value;if(v<=0)return;
+  const t=ac.currentTime,len=Math.max(0.2,Math.min(sec*1.4,1.4));
+  const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();
+  o.type='sawtooth';const fr=mf(pitch);
+  if(tech==='b'){o.frequency.setValueAtTime(fr,t);o.frequency.exponentialRampToValueAtTime(mf(pitch+2),t+len*0.5)}
+  else if(tech==='/'){o.frequency.setValueAtTime(mf(pitch-2),t);o.frequency.exponentialRampToValueAtTime(fr,t+0.07)}
+  else if(tech==='\\'){o.frequency.setValueAtTime(mf(pitch+2),t);o.frequency.exponentialRampToValueAtTime(fr,t+0.07)}
+  else{o.frequency.setValueAtTime(fr,t);if(tech==='~'){const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=5.5;lg.gain.value=fr*0.012;l.connect(lg);lg.connect(o.frequency);l.start(t);l.stop(t+len+0.05)}}
+  f.type='lowpass';f.frequency.setValueAtTime(2800,t);f.frequency.exponentialRampToValueAtTime(600,t+len);
+  const peak=(tech==='h'||tech==='p')?0.25:0.4;
+  g.gain.setValueAtTime(0.001,t);g.gain.linearRampToValueAtTime(peak*v,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+len);
+  o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+len+0.05);
+}
+function click(){
+  if(!ac)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type='triangle';o.frequency.value=1200;g.gain.setValueAtTime(0.15*+$('vol').value,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+0.04);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+0.05);
+}
+
+/* ---------- fretboard ---------- */
+function drawBoard(){
+  const b=$('board');b.innerHTML='';const dots=[3,5,7,9,12,15,17,19,21,24],mode=$('labels').value;
+  const head=document.createElement('div');head.className='flex text-[10px] text-gray-500 mono font-bold mb-1';
+  head.innerHTML='<div class="w-10 shrink-0 text-center">NUT</div>'+Array.from({length:24},(_,i)=>`<div class="flex-1 text-center">${i+1}</div>`).join('');
+  b.appendChild(head);
+  STR.forEach((sd,s)=>{
+    const row=document.createElement('div');row.className='relative flex items-center h-8';
+    const line=document.createElement('div');line.className='absolute left-0 right-0 bg-gray-400';
+    line.style.height=(1+s*0.6)+'px';line.style.opacity=.7;row.appendChild(line);
+    const nut=document.createElement('div');nut.className='w-10 shrink-0 h-full flex items-center justify-center text-xs font-bold text-amber-300 bg-black/60 z-10 border-r-4 border-gray-200';
+    nut.textContent=sd.n;row.appendChild(nut);
+    for(let f=1;f<=24;f++){
+      const n=noteAt(s,f),c=document.createElement('div');
+      c.className='fretcell flex-1 h-full relative flex items-center justify-center z-10 cursor-pointer hover:bg-white/5';
+      if(s===2&&dots.includes(f)){const d=document.createElement('div');d.className='absolute w-2.5 h-2.5 rounded-full pointer-events-none '+(f%12===0?'bg-amber-500':'bg-gray-600/60');c.appendChild(d)}
+      if(n.deg>=0){
+        const m=document.createElement('div');m.id=`n-${s}-${f}`;
+        let cls=n.deg===0?'bg-red-500 text-white ring-2 ring-red-300 font-bold':n.deg===2?'bg-amber-400 text-gray-900 font-semibold':'bg-cyan-500 text-gray-900 font-semibold';
+        if(!inBox(f))cls+=' opacity-20 scale-75';
+        m.className=`w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all ${cls}`;
+        m.textContent=mode==='deg'?DEG[n.deg]:n.name;c.appendChild(m);
+        c.onclick=()=>{initAudio();tone(n.p,0.5,'');flash(s,f)};
+      }
+      row.appendChild(c);
+    }
+    b.appendChild(row);
+  });
+}
+function flash(s,f){const e=$(`n-${s}-${f}`);if(!e)return;e.classList.remove('pulse');void e.offsetWidth;e.classList.add('pulse');setTimeout(()=>e.classList.remove('pulse'),400)}
+
+function drawBoxButtons(){
+  const w=$('boxes');w.innerHTML='';const st=boxStart();
+  const nm=d=>NOTES[(rootPc()+IV[d])%12];
+  $('lg-r').textContent='Root ('+nm(0)+')';$('lg-3').textContent='Major 3rd ('+nm(2)+')';$('lg-o').textContent='Scale Notes ('+nm(1)+', '+nm(3)+', '+nm(4)+')';
+  const items=[['all','Full neck']].concat(BOX.map((r,i)=>[i,`Box ${i+1} (${st+r[0]}–${st+r[1]})`]));
+  items.forEach(([v,t])=>{
+    const b=document.createElement('button');b.className='btn'+(String(v)===String(boxSel)?' on':'');b.textContent=t;
+    b.onclick=()=>{boxSel=v;drawBoxButtons();drawBoard();generate()};w.appendChild(b);
+  });
+}
+
+/* ---------- riff generator ---------- */
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function generate(){
+  stop();
+  const P=pool();if(!P.length)return;
+  const sty=STYLES[$('style').value],lvl=$('level').value,len=+$('len').value;
+  const wide=lvl==='advanced',reach=wide?5:3,sReach=wide?2:1;
+  let cur=pick(P.filter(p=>p.deg===0)||P);if(!cur)cur=pick(P);
+  let prev=null;riff=[];
+  for(let i=0;i<len;i++){
+    if(i===len-1){ // resolve to the nearest root
+      const roots=P.filter(p=>p.deg===0);
+      if(roots.length)cur=roots.reduce((a,b)=>Math.abs(b.p-(prev?prev.p:cur.p))<Math.abs(a.p-(prev?prev.p:cur.p))?b:a);
+    }
+    let tech='';
+    if(prev&&lvl!=='beginner'){
+      const r=Math.random(),same=prev.s===cur.s&&prev.f!==cur.f;
+      if(same&&r<sty.t){
+        const up=cur.p>prev.p,hp=Math.random()<0.7;
+        tech=up?(hp?'h':'/'):(hp?'p':'\\');
+      }else if(i<len-1&&r>0.92&&degOf(cur.p%12+2)>=0)tech='b';
+    }
+    if(!tech&&lvl!=='beginner'&&(sty.d[i%sty.d.length]>=1||i===len-1))tech='~';
+    riff.push({s:cur.s,f:cur.f,p:cur.p,deg:cur.deg,tech,d:sty.d[i%sty.d.length]});
+    prev=cur;
+    let near=P.filter(p=>Math.abs(p.f-cur.f)<=reach&&Math.abs(p.s-cur.s)<=sReach&&!(p.s===cur.s&&p.f===cur.f));
+    cur=near.length?pick(near):pick(P);
+  }
+  drawTab();
+}
+
+/* ---------- tab ---------- */
+function drawTab(){
+  const t=$('tab');t.innerHTML='';
+  if(!riff.length){t.textContent='Generate a riff to see tab.';return}
+  const lab=document.createElement('div');lab.className='flex flex-col text-xs font-bold text-amber-400 pr-2 border-r border-gray-700 gap-1 p-1';
+  STR.forEach(s=>{const d=document.createElement('div');d.className='h-5 flex items-center justify-center';d.textContent=s.n;lab.appendChild(d)});
+  t.appendChild(lab);
+  riff.forEach((n,i)=>{
+    const col=document.createElement('div');col.id='tc'+i;col.className='tabcol flex flex-col items-center cursor-pointer hover:bg-gray-800 p-1 gap-1 min-w-[2.25rem]';
+    col.onclick=()=>{initAudio();playStep(i)};
+    STR.forEach((_,s)=>{
+      const c=document.createElement('div');c.className='w-full h-5 flex items-center justify-center relative text-xs font-bold';
+      c.innerHTML='<div class="absolute w-full h-px bg-gray-700"></div>';
+      if(n.s===s){
+        const sp=document.createElement('span');
+        sp.className='z-10 px-1 bg-[#0b0d10] '+(n.deg===0?'text-red-400':n.deg===2?'text-amber-300':'text-cyan-300');
+        sp.innerHTML=n.f+(n.tech?`<span class="text-amber-400 text-[9px]">${n.tech}</span>`:'');c.appendChild(sp);
+      }
+      col.appendChild(c);
+    });
+    t.appendChild(col);
+  });
+}
+function copyTab(){
+  if(!riff.length)return;
+  let out=`${NOTES[rootPc()]} Major Pentatonic riff (${$('bpm').value} BPM)\n\n`;
+  STR.forEach((sd,s)=>{
+    let l=sd.n+'|';
+    riff.forEach(n=>{l+=(n.s===s?'-'+n.f+n.tech:'-').padEnd(5,'-')});
+    out+=l+'|\n';
+  });
+  const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy')}catch(e){}
+  document.body.removeChild(ta);
+  $('copy').textContent='Copied!';setTimeout(()=>$('copy').textContent='Copy text TAB',1800);
+}
+
+/* ---------- playback ---------- */
+function playStep(i){
+  const n=riff[i];if(!n)return;
+  document.querySelectorAll('.tabcol').forEach(c=>c.classList.remove('active'));
+  const c=$('tc'+i);if(c){c.classList.add('active');c.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+  tone(n.p,n.d*60/(+$('bpm').value*speed),n.tech);flash(n.s,n.f);
+}
+function tick(){
+  if(!playing)return;
+  const n=riff[idx];
+  if(metro&&Number.isInteger(cum))click();
+  playStep(idx);
+  const delay=n.d*60/(+$('bpm').value*speed)*1000; // tempo is read live every step
+  cum+=n.d;idx++;
+  if(idx>=riff.length){
+    if(loop){idx=0;cum=0}else{timer=setTimeout(stop,delay);return}
+  }
+  timer=setTimeout(tick,delay);
+}
+function start(){
+  if(!riff.length)generate();
+  initAudio();playing=true;$('play').textContent='❚❚';tick();
+}
+function pause(){playing=false;clearTimeout(timer);$('play').textContent='▶'}
+function stop(){
+  playing=false;clearTimeout(timer);idx=0;cum=0;$('play').textContent='▶';
+  document.querySelectorAll('.tabcol').forEach(c=>c.classList.remove('active'));
+}
+
+/* ---------- favorites ---------- */
+function drawFavs(){
+  const w=$('favs');w.innerHTML='';
+  favs.forEach(f=>{
+    const b=document.createElement('button');b.className='btn text-amber-300';b.textContent='▶ '+f.title;
+    b.onclick=()=>{stop();$('key').value=f.key;drawBoard();drawBoxButtons();riff=f.riff;drawTab();start()};
+    w.appendChild(b);
+  });
+}
+
+/* ---------- wiring ---------- */
+NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n+' Major';if(n==='A')o.selected=true;$('key').appendChild(o)});
+$('gen').onclick=generate;
+$('fav').onclick=()=>{
+  if(!riff.length)return;
+  favs.push({key:rootPc(),riff:riff.map(n=>({...n})),title:`${NOTES[rootPc()]} ${$('style').selectedOptions[0].text} (${riff.length})`});drawFavs();
+};
+$('play').onclick=()=>playing?pause():start();
+$('stop').onclick=stop;
+$('loop').onclick=e=>{loop=!loop;e.currentTarget.classList.toggle('on',loop)};
+$('metro').onclick=e=>{metro=!metro;e.currentTarget.classList.toggle('on',metro)};
+$('bpm').oninput=e=>$('bpmv').textContent=e.target.value+' BPM';
+$('copy').onclick=copyTab;
+document.querySelectorAll('#speeds .btn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#speeds .btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');speed=+b.dataset.s;
+});
+$('key').onchange=()=>{drawBoxButtons();drawBoard();generate()};
+['style','level','len'].forEach(id=>$(id).onchange=generate);
+$('labels').onchange=drawBoard;
+drawBoxButtons();drawBoard();generate();
+</script>
+</body>
+</html>
